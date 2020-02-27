@@ -17,19 +17,116 @@ Copyright (C) 2011 by the Computer Poker Research Group, University of Alberta
 #include "rng.h"
 #include "net.h"
 
-int main( int argc, char **argv )
-{
-  int sock, len, r, a;
-  int32_t min, max;
-  uint16_t port;
-  double p;
-  Game *game;
-  MatchState state;
+
+/* TODO: implement your own poker strategy in this function!
+ * 
+ * The function is called when it is the agent's turn to play!
+ * All the information about the game and the current state is preprocessed
+ * and stored in game and state.
+ * 
+ * */
+Action act(Game *game, MatchState *state, rng_state_t *rng) {
   Action action;
-  FILE *file, *toServer, *fromServer;
-  struct timeval tv;
+
+  // TODO: substitute this simple random strategy with your own strategy
+
   double probs[ NUM_ACTION_TYPES ];
   double actionProbs[ NUM_ACTION_TYPES ];
+  /* Define the probabilities of actions for the player */
+  probs[ a_fold ] = 0.06;
+  probs[ a_call ] = ( 1.0 - probs[ a_fold ] ) * 0.5;
+  probs[ a_raise ] = ( 1.0 - probs[ a_fold ] ) * 0.5;
+
+  /* build the set of valid actions */
+  double p = 0.0;
+  int a;
+  for( a = 0; a < NUM_ACTION_TYPES; ++a ) {
+    actionProbs[ a ] = 0.0;
+  }
+
+  /* consider fold */
+  action.type = a_fold;
+  action.size = 0;
+  if( isValidAction( game, &(state->state), 0, &action ) ) {
+    actionProbs[ a_fold ] = probs[ a_fold ];
+    p += probs[ a_fold ];
+  }
+
+  /* consider call */
+  action.type = a_call;
+  action.size = 0;
+  actionProbs[ a_call ] = probs[ a_call ];
+  p += probs[ a_call ];
+
+  /* consider raise */
+  int32_t min, max;
+  if( raiseIsValid( game, &(state->state), &min, &max ) ) {
+    actionProbs[ a_raise ] = probs[ a_raise ];
+    p += probs[ a_raise ];
+  }
+
+  /* normalise the probabilities  */
+  assert( p > 0.0 );
+  for( a = 0; a < NUM_ACTION_TYPES; ++a ) {
+
+    actionProbs[ a ] /= p;
+  }
+
+  /* choose one of the valid actions at random */
+  p = genrand_real2( rng );
+  for( a = 0; a < NUM_ACTION_TYPES - 1; ++a ) {
+    if( p <= actionProbs[ a ] ) {
+      break;
+    }
+    p -= actionProbs[ a ];
+  }
+  action.type = (enum ActionType)a;
+  if( a == a_raise ) {
+    action.size = min + genrand_int32( rng ) % ( max - min + 1 );
+  }
+  else {
+    action.size = 0;
+  }
+
+  return action;
+}
+
+
+/* Anything related with socket is handled below. */
+/* If you are not interested with protocol details, you can safely skip these. */
+
+int step(int len, char line[], Game *game, MatchState *state, rng_state_t *rng) {
+  /* add a colon (guaranteed to fit because we read a new-line in fgets) */
+  line[ len ] = ':';
+  ++len;
+
+  Action action = act(game, state, rng);
+
+  /* do the action! */
+  assert( isValidAction( game, &(state->state), 0, &action ) );
+  int r = printAction( game, &action, MAX_LINE_LEN - len - 2, &line[ len ] );
+  if( r < 0 ) {
+    fprintf( stderr, "ERROR: line too long after printing action\n" );
+    exit( EXIT_FAILURE );
+  }
+  len += r;
+  line[ len ] = '\r';
+  ++len;
+  line[ len ] = '\n';
+  ++len;
+
+  return len;
+}
+
+
+int main( int argc, char **argv )
+{
+  int sock, len;
+  uint16_t port;
+  Game *game;
+  MatchState state;
+  FILE *file, *toServer, *fromServer;
+  struct timeval tv;
   rng_state_t rng;
   char line[ MAX_LINE_LEN ];
 
@@ -41,11 +138,6 @@ int main( int argc, char **argv )
     fprintf( stderr, "usage: player game server port\n" );
     exit( EXIT_FAILURE );
   }
-
-  /* Define the probabilities of actions for the player */
-  probs[ a_fold ] = 0.06;
-  probs[ a_call ] = ( 1.0 - probs[ a_fold ] ) * 0.5;
-  probs[ a_raise ] = ( 1.0 - probs[ a_fold ] ) * 0.5;
 
   /* Initialize the player's random number state using time */
   gettimeofday( &tv, NULL );
@@ -121,76 +213,7 @@ int main( int argc, char **argv )
       continue;
     }
 
-    /* add a colon (guaranteed to fit because we read a new-line in fgets) */
-    line[ len ] = ':';
-    ++len;
-
-    /* build the set of valid actions */
-    p = 0;
-    for( a = 0; a < NUM_ACTION_TYPES; ++a ) {
-
-      actionProbs[ a ] = 0.0;
-    }
-
-    /* consider fold */
-    action.type = a_fold;
-    action.size = 0;
-    if( isValidAction( game, &state.state, 0, &action ) ) {
-
-      actionProbs[ a_fold ] = probs[ a_fold ];
-      p += probs[ a_fold ];
-    }
-
-    /* consider call */
-    action.type = a_call;
-    action.size = 0;
-    actionProbs[ a_call ] = probs[ a_call ];
-    p += probs[ a_call ];
-
-    /* consider raise */
-    if( raiseIsValid( game, &state.state, &min, &max ) ) {
-
-      actionProbs[ a_raise ] = probs[ a_raise ];
-      p += probs[ a_raise ];
-    }
-
-    /* normalise the probabilities  */
-    assert( p > 0.0 );
-    for( a = 0; a < NUM_ACTION_TYPES; ++a ) {
-
-      actionProbs[ a ] /= p;
-    }
-
-    /* choose one of the valid actions at random */
-    p = genrand_real2( &rng );
-    for( a = 0; a < NUM_ACTION_TYPES - 1; ++a ) {
-
-      if( p <= actionProbs[ a ] ) {
-
-        break;
-      }
-      p -= actionProbs[ a ];
-    }
-    action.type = (enum ActionType)a;
-    if( a == a_raise ) {
-
-      action.size = min + genrand_int32( &rng ) % ( max - min + 1 );
-    }
-
-    /* do the action! */
-    assert( isValidAction( game, &state.state, 0, &action ) );
-    r = printAction( game, &action, MAX_LINE_LEN - len - 2,
-		     &line[ len ] );
-    if( r < 0 ) {
-
-      fprintf( stderr, "ERROR: line too long after printing action\n" );
-      exit( EXIT_FAILURE );
-    }
-    len += r;
-    line[ len ] = '\r';
-    ++len;
-    line[ len ] = '\n';
-    ++len;
+    len = step(len, line, game, &state, &rng);
 
     if( fwrite( line, 1, len, toServer ) != len ) {
 
