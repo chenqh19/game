@@ -1,5 +1,4 @@
-CC = gcc
-CFLAGS = -O3 -Wall
+CXX = g++
 
 PROGRAMS = dealer example_player
 
@@ -11,8 +10,8 @@ clean:
 clean_log:
 	rm ./logs/*
 
-dealer: game.c game.h evalHandTables rng.c rng.h dealer.c net.c net.h
-	$(CC) $(CFLAGS) -o $@ game.c rng.c dealer.c net.c
+dealer: game.cpp game.h evalHandTables rng.cpp rng.h dealer.cpp net.cpp net.h
+	$(CXX) -o $@ game.cpp rng.cpp dealer.cpp net.cpp
 
-example_player: game.c game.h evalHandTables rng.c rng.h example_player.c net.c net.h
-	$(CC) $(CFLAGS) -o $@ game.c rng.c example_player.c net.c
+example_player: game.cpp game.h evalHandTables rng.cpp rng.h example_player.cpp net.cpp net.h
+	$(CXX) -o $@ game.cpp rng.cpp example_player.cpp net.cpp

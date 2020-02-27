@@ -142,7 +142,7 @@ static int readItems( const char *itemFormat, const int numItems,
   for( i = 0; i < numItems; ++i ) {
 
     c += consumeSpaces( &string[ c ], consumeEqual );
-    if( sscanf( &string[ c ], fmt, items + i * itemSize, &r ) < 1 ) {
+    if( sscanf( &string[ c ], fmt, (char*)items + i * itemSize, &r ) < 1 ) {
       break;
     }
     c += r;
