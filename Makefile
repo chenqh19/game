@@ -8,7 +8,7 @@ clean:
 	rm -f $(PROGRAMS)
 
 clean_log:
-	rm ./logs/*
+	rm -f ./logs/*
 
 dealer: game.cpp game.h evalHandTables rng.cpp rng.h dealer.cpp net.cpp net.h
 	$(CXX) -o $@ game.cpp rng.cpp dealer.cpp net.cpp

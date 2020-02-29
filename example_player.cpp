@@ -1,7 +1,3 @@
-/*
-Copyright (C) 2011 by the Computer Poker Research Group, University of Alberta
-*/
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -135,7 +131,7 @@ int main( int argc, char **argv )
 
   if( argc < 3 ) {
 
-    fprintf( stderr, "usage: player game server port\n" );
+    fprintf( stderr, "usage: player server port\n" );
     exit( EXIT_FAILURE );
   }
 
