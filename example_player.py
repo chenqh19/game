@@ -147,7 +147,6 @@ class GameState:
 
 
 def act(state: GameState):
-    print(str(state.cards))
     a = random.randint(0, 3)
     if a == 1 and state.is_fold_valid():
         return "f"
