@@ -173,7 +173,7 @@ def act(state: GameState):
                 known_cards.append([])
                 known_cards[-1].append(known_string[2*i])
                 known_cards[-1].append(known_string[2*i+1])
-            if calculation.sampling(my_cards, known_cards, 1000) > 0:
+            if calculation.sampling(my_cards, known_cards, 10000) > 0:
                 return "r" + str(max_bet)
         return "c"
     return "f"
