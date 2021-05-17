@@ -1,6 +1,7 @@
 import sys
 import socket
 import random
+import calculation
 
 
 def eprint(*args, **kwargs):
@@ -145,7 +146,7 @@ class GameState:
                 current_bet = int(a[1:])
         return min(current_bet + min_raise, 20000), 20000
 
-
+# Implement the function here
 def act(state: GameState):
     a = random.randint(0, 3)
     if a == 1 and state.is_fold_valid():
@@ -155,9 +156,28 @@ def act(state: GameState):
         if a == 2:
             return "r" + str(min_bet)
         else:
-            return "r" + str(max_bet)
-    else:
+            cards = state.cards
+            my_string = ''
+            if len(cards) != 0:
+                my_string = cards[0]
+            known_string = ''
+            for i in range(1,len(cards)):
+                known_string += cards[i]
+            known_cards = []
+            my_cards = []
+            for i in range(int(len(my_string)/2)):
+                my_cards.append([])
+                my_cards[-1].append(my_string[2*i])
+                my_cards[-1].append(my_string[2*i+1])
+            for i in range(int(len(known_string)/2)):
+                known_cards.append([])
+                known_cards[-1].append(known_string[2*i])
+                known_cards[-1].append(known_string[2*i+1])
+            if calculation.sampling(my_cards, known_cards, 1000) > 0:
+                return "r" + str(max_bet)
         return "c"
+    return "f"
+
 
 
 if __name__ == "__main__":
