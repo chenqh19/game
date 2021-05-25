@@ -1,6 +1,8 @@
 import math
 from random import choice
 from copy import deepcopy
+import treys
+
 
 def pat_to_num(pattern):
     if pattern == 's':
@@ -25,6 +27,72 @@ def fig_to_num(figure):
         return 14
     return int(figure)
 
+def num_to_card(num):
+    ans = ''
+    fig = int(num/4)
+    pat = num % 4
+    if fig == 10:
+        ans = ans + 'T'
+    elif fig == 11:
+        ans = ans + 'J'
+    elif fig == 12:
+        ans = ans + 'Q'
+    elif fig == 13:
+        ans = ans + 'K'
+    elif fig == 14:
+        ans = ans + 'A'
+    else:
+        ans = ans + str(fig)
+    if pat == 0:
+        ans = ans + 's'
+    elif pat == 1:
+        ans = ans + 'h'
+    elif pat == 2:
+        ans = ans + 'd'
+    else:
+        ans = ans + 'c'
+    return ans
+    
+
+
+def sampling(my_cards, known_cards, num_of_samples):
+    cards = [i for i in range(8,60)]
+    prob_array = []
+    for card in known_cards:
+        num = fig_to_num(card[0])*4+pat_to_num(card[1])
+        cards.remove(num)
+    for card in my_cards:
+        num = fig_to_num(card[0])*4+pat_to_num(card[1])
+        cards.remove(num)
+    win = 0
+    for i in range(num_of_samples):
+        sampled = []
+        oppo = []
+        c = deepcopy(cards)
+        for i in range(5-len(known_cards)):
+            new_sample = choice(c)
+            c.remove(new_sample)
+            new_sample = num_to_card(new_sample)
+            sampled.append(new_sample)
+        for j in range(2):
+            new_sample = choice(c)
+            c.remove(new_sample)
+            new_sample = num_to_card(new_sample)
+            oppo.append(new_sample)
+        f = deepcopy(known_cards)
+        m = deepcopy(my_cards)
+        oppo_result = evaluation(oppo, known_cards+f)
+        my_result = evaluation(m, known_cards+f)
+        if my_result < oppo_result:
+            win = True
+        else:
+            win = False
+        valid = True
+        # We need to find out those invalid samples: opposite will never do stupid bets like that
+
+
+
+'''
 def sampling(my_cards, known_cards, num_of_samples):
     cards = [i for i in range(8,60)]
     prob_array = []
@@ -65,6 +133,7 @@ def sampling(my_cards, known_cards, num_of_samples):
             win += 0.5
     return win/num_of_samples
 
+
 def check_type(all_cards):
     num_of_fig = []
     num_of_pat = []
@@ -103,7 +172,20 @@ def check_type(all_cards):
         return 2
     return 1
 
-    
+'''
+
+def evaluation(my_cards, known_cards):
+    hand = []
+    for new_card in my_cards:
+        hand.append(treys.Card.new(new_card))
+    board = []
+    for new_card in known_cards:
+        board.append(treys.Card.new(new_card))
+    evaluator = treys.Evaluator()
+    if len(board) != 0 and len(hand) != 0:
+        return evaluator.evaluate(board, hand)
+    else:
+        return 10000
 
 
 

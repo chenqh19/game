@@ -2,6 +2,7 @@ import sys
 import socket
 import random
 import calculation
+import treys
 
 
 def eprint(*args, **kwargs):
@@ -166,14 +167,10 @@ def act(state: GameState):
             known_cards = []
             my_cards = []
             for i in range(int(len(my_string)/2)):
-                my_cards.append([])
-                my_cards[-1].append(my_string[2*i])
-                my_cards[-1].append(my_string[2*i+1])
+                my_cards.append(my_string[2*i]+my_string[2*i+1])
             for i in range(int(len(known_string)/2)):
-                known_cards.append([])
-                known_cards[-1].append(known_string[2*i])
-                known_cards[-1].append(known_string[2*i+1])
-            if calculation.sampling(my_cards, known_cards, 10000) > 0:
+                known_cards.append(known_string[2*i]+known_string[2*i+1])
+            if calculation.evaluation(my_cards, known_cards) < 1000:
                 return "r" + str(max_bet)
         return "c"
     return "f"
