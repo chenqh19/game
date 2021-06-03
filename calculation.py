@@ -2,6 +2,11 @@ import math
 from random import choice
 from copy import deepcopy
 import treys
+# from poker import Range
+# from poker.hand import Combo
+# import holdem_calc
+# import holdem_functions
+# from pypokerengine.utils.card_utils import gen_cards, estimate_hole_card_win_rate
 
 
 def pat_to_num(pattern):
@@ -52,12 +57,33 @@ def num_to_card(num):
     else:
         ans = ans + 'c'
     return ans
+
+def change_express(hand):
+    new_hand = []
+    for card in hand:
+        new = ''
+        if card[1] == 's':
+            new += 'S'
+        elif card[1] == 'h':
+            new += 'H'
+        elif card[1] == 'd':
+            new += 'D'
+        elif card[1] == 'c':
+            new += 'C'
+        if card[0] == 'A':
+            new += '1'
+        else:
+            new += card[0]
+        new_hand.append(new)
+    print(new_hand)
+    return new_hand
+    
+
     
 
 
-def sampling(my_cards, known_cards, num_of_samples):
+def sampling(my_cards, known_cards, num_of_samples, s_type, rate):
     cards = [i for i in range(8,60)]
-    prob_array = []
     for card in known_cards:
         num = fig_to_num(card[0])*4+pat_to_num(card[1])
         cards.remove(num)
@@ -65,6 +91,7 @@ def sampling(my_cards, known_cards, num_of_samples):
         num = fig_to_num(card[0])*4+pat_to_num(card[1])
         cards.remove(num)
     win = 0
+    all_samp = 0
     for i in range(num_of_samples):
         sampled = []
         oppo = []
@@ -79,15 +106,24 @@ def sampling(my_cards, known_cards, num_of_samples):
             c.remove(new_sample)
             new_sample = num_to_card(new_sample)
             oppo.append(new_sample)
-        f = deepcopy(known_cards)
-        m = deepcopy(my_cards)
-        oppo_result = evaluation(oppo, known_cards+f)
-        my_result = evaluation(m, known_cards+f)
-        if my_result < oppo_result:
-            win = True
-        else:
-            win = False
+        # f = deepcopy(known_cards)
+        # m = deepcopy(my_cards)
+
+
+        oppo_result = evaluation(oppo, sampled+known_cards)
+        my_result = evaluation(my_cards, sampled+known_cards)
+
+
         valid = True
+        if s_type == 1 and len(known_cards) != 0:
+            if sampling(oppo, known_cards, 5, 0, 0) < rate:
+                # valid = False
+                continue
+        all_samp += 1
+        if my_result < oppo_result:
+            win += 1
+    return win/max(all_samp,1)
+        
         # We need to find out those invalid samples: opposite will never do stupid bets like that
 
 
@@ -182,7 +218,8 @@ def evaluation(my_cards, known_cards):
     for new_card in known_cards:
         board.append(treys.Card.new(new_card))
     evaluator = treys.Evaluator()
-    if len(board) != 0 and len(hand) != 0:
+    if len(hand) != 0:
+        # print(board, hand)
         return evaluator.evaluate(board, hand)
     else:
         return 10000

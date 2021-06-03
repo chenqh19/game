@@ -149,31 +149,62 @@ class GameState:
 
 # Implement the function here
 def act(state: GameState):
-    a = random.randint(0, 3)
-    if a == 1 and state.is_fold_valid():
-        return "f"
-    elif (a == 2 or a == 3) and state.is_raise_valid():
+    cards = state.cards
+    my_string = ''
+    if len(cards) != 0:
+        my_string = cards[0]
+    known_string = ''
+    for i in range(1,len(cards)):
+        known_string += cards[i]
+    known_cards = []
+    my_cards = []
+    for i in range(int(len(my_string)/2)):
+        my_cards.append(''+my_string[2*i]+my_string[2*i+1])
+    for i in range(int(len(known_string)/2)):
+        known_cards.append(''+known_string[2*i]+known_string[2*i+1])
+    oppo_spent = state.spent[1-state.viewingPlayer]
+    my_spent = state.spent[state.viewingPlayer]
+    win_prob = calculation.sampling(my_cards, known_cards, 30, 1, my_spent/oppo_spent)
+    need_fold = oppo_spent * (1-2*win_prob) - my_spent
+    if win_prob > 0.9 and state.is_raise_valid():
         min_bet, max_bet = state.is_raise_valid()
-        if a == 2:
-            return "r" + str(min_bet)
-        else:
-            cards = state.cards
-            my_string = ''
-            if len(cards) != 0:
-                my_string = cards[0]
-            known_string = ''
-            for i in range(1,len(cards)):
-                known_string += cards[i]
-            known_cards = []
-            my_cards = []
-            for i in range(int(len(my_string)/2)):
-                my_cards.append(my_string[2*i]+my_string[2*i+1])
-            for i in range(int(len(known_string)/2)):
-                known_cards.append(known_string[2*i]+known_string[2*i+1])
-            if calculation.evaluation(my_cards, known_cards) < 1000:
-                return "r" + str(max_bet)
-        return "c"
-    return "f"
+        next_bet = max(min(oppo_spent / (2*win_prob-1), max_bet), min_bet)
+    elif win_prob > 0.7 and state.is_raise_valid():
+        min_bet, max_bet = state.is_raise_valid()
+        next_bet = max(min(oppo_spent / (2*win_prob-1), max_bet), min_bet)
+        if need_fold < 0:
+            return "r" + str(next_bet)
+    if need_fold > 0 and state.is_fold_valid():
+            return "f"
+    return "c"
+    
+    
+    
+    # a = random.randint(0, 3)
+    # if a == 1 and state.is_fold_valid():
+    #     return "f"
+    # elif (a == 2 or a == 3) and state.is_raise_valid():
+    #     min_bet, max_bet = state.is_raise_valid()
+    #     if a == 2:
+    #         return "r" + str(min_bet)
+    #     else:
+    #         cards = state.cards
+    #         my_string = ''
+    #         if len(cards) != 0:
+    #             my_string = cards[0]
+    #         known_string = ''
+    #         for i in range(1,len(cards)):
+    #             known_string += cards[i]
+    #         known_cards = []
+    #         my_cards = []
+    #         for i in range(int(len(my_string)/2)):
+    #             my_cards.append(my_string[2*i]+my_string[2*i+1])
+    #         for i in range(int(len(known_string)/2)):
+    #             known_cards.append(known_string[2*i]+known_string[2*i+1])
+    #         if calculation.evaluation(my_cards, known_cards) < 1000:
+    #             return "r" + str(max_bet)
+    #     return "c"
+    # return "f"
 
 
 
